@@ -31,6 +31,7 @@ class BoidFlockers(Model):
         cohere: float = 0.025,
         separate: float = 0.25,
         match: float = 0.04,
+        
     ) -> None:
         """
         Create a new Flockers model.
@@ -67,7 +68,7 @@ class BoidFlockers(Model):
         """
         Create self.population agents, with random positions and starting headings.
         """
-        for i in range(self.population):
+        for i in range(self.population - 5):
             x = self.random.random() * self.space.x_max
             y = self.random.random() * self.space.y_max
             pos = np.array((x, y))
@@ -80,10 +81,33 @@ class BoidFlockers(Model):
                 velocity,
                 self.vision,
                 self.separation,
+                "susceptible",
+                0,
                 **self.factors,
             )
             self.space.place_agent(boid, pos)
             self.schedule.add(boid)
+        # 感染しているエージェントを加える
+        for i in range(self.population - 5, self.population):
+            x = self.random.random() * self.space.x_max
+            y = self.random.random() * self.space.y_max
+            pos = np.array((x, y))
+            velocity = np.random.random(2) * 2 - 1
+            boid = Boid(
+                i,
+                self,
+                pos,
+                self.speed,
+                velocity,
+                self.vision,
+                self.separation,
+                "infected",
+                0,
+                **self.factors,
+            )
+            self.space.place_agent(boid, pos)
+            self.schedule.add(boid)
+            print("test")
 
     def step(self) -> None:
         self.schedule.step()
@@ -99,7 +123,15 @@ class BoidFlockers(Model):
         # エージェントを手前に、visionを奥側に描画する
         for agent in self.schedule.agents:
             x, y = agent.pos
-            scat = ax.scatter(x, y, c="yellow", s=10, zorder=2)
+            if(agent.status == "susceptible"):
+                agent_color = "green"
+            if(agent.status == "infected"):
+                agent_color = "red"
+            if(agent.status == "recovered"):
+                agent_color = "blue"
+            if(agent.status == "removed"):
+                agent_color = "black"
+            scat = ax.scatter(x, y, c=agent_color, s=10, zorder=2)
             self.agent_pos_lst[agent.unique_id] = scat
             c = patches.Circle(
                 xy=agent.pos,
@@ -119,5 +151,14 @@ class BoidFlockers(Model):
     def draw_succesive(self) -> None:
         self.text.set_text(f"t={self.schedule.time:03d}")
         for agent in self.schedule.agents:
+            if(agent.status == "susceptible"):
+                agent_color = "green"
+            if(agent.status == "infected"):
+                agent_color = "red"
+            if(agent.status == "recovered"):
+                agent_color = "blue"
+            if(agent.status == "removed"):
+                agent_color = "black"
             self.agent_pos_lst[agent.unique_id].set_offsets(agent.pos)
             self.agent_vision_lst[agent.unique_id].center = agent.pos
+            self.agent_pos_lst[agent.unique_id].set_color = agent_color
