@@ -2,7 +2,6 @@ import numpy as np
 from mesa import Agent
 
 
-
 class Boid(Agent):
     '''
     A Boid-style flocker agent.
@@ -18,7 +17,8 @@ class Boid(Agent):
     any other Boid.
     '''
     def __init__(self, unique_id, model, pos, speed, velocity, vision,
-            separation, initial_status, infection_time, cohere=0.025, separate=0.25, match=0.04):
+            separation, initial_status, infection_time, motality, infection_rate, 
+            cohere=0.025, separate=0.25, match=0.04):
         '''
         Create a new Boid flocker agent.
 
@@ -40,7 +40,7 @@ class Boid(Agent):
         # infected:感染
         # recovered:抗体保持
         # removed:離脱
-        
+
         super().__init__(unique_id, model)
         self.pos = np.array(pos)
         self.speed = speed
@@ -52,8 +52,8 @@ class Boid(Agent):
         self.match_factor = match
         self.status = initial_status
         self.infection_time = 0
-        self.motality = 0.1         # 死亡率
-        self.infection_rate = 0.5   # 感染率
+        self.motality = motality         # 死亡率
+        self.infection_rate = infection_rate   # 感染率
 
     def cohere(self, neighbors):
         '''
@@ -95,14 +95,15 @@ class Boid(Agent):
         '''
 
         neighbors = self.model.space.get_neighbors(self.pos, self.vision, False)
-        self.velocity += (self.cohere(neighbors) * self.cohere_factor +
-                          self.separate(neighbors) * self.separate_factor +
-                          self.match_heading(neighbors) * self.match_factor) / 2
+        # self.velocity += (self.cohere(neighbors) * self.cohere_factor +
+        #                  self.separate(neighbors) * self.separate_factor +
+        #                  self.match_heading(neighbors) * self.match_factor) / 2
+        self.velocity += self.separate(neighbors) * self.separate_factor
         self.velocity /= np.linalg.norm(self.velocity)
         new_pos = self.pos + self.velocity * self.speed
         self.infection_recover(neighbors)
         self.model.space.move_agent(self, new_pos)
-  
+
     def infection_recover(self, neighbors):
         '''
         近傍のエージェントから感染する.
@@ -113,11 +114,11 @@ class Boid(Agent):
                 for neighbor in neighbors:
                     if(neighbor.status == "infected"):
                         if(self.random.random() < self.infection_rate):
-                            self.state = "infected"
+                            self.status = "infected"
         if(self.status == "infected"):
-            if(self.infection_time > 10):
+            if(self.infection_time > 20):
                 if(self.random.random() < self.motality):
-                    self.state = "removed"
+                    self.status = "removed"
                 else:
-                    self.state = "recovered"
+                    self.status = "recovered"
             self.infection_time += 1

@@ -1,6 +1,6 @@
 [global]
 description = "ノミナルケース"
-max_timestep = 100
+max_timestep = 200
 
 [visualization]
 interval = 0
@@ -10,12 +10,15 @@ dpi = 200
 interval = 50
 
 [model]
-population = 30
+population = 100
 width = 100
 height = 100
 speed = 1
-vision = 15
+vision = 5
 separation = 2
+motality = 0.1
+infection_rate = 0.3
 cohere = 0.025
 separate = 0.25
 match = 0.04
+

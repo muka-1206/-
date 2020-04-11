@@ -27,11 +27,13 @@ class BoidFlockers(Model):
         height: int = 100,
         speed: float = 1,
         vision: float = 10,
+        motality: float = 0.1,
+        infection_rate: float = 0.3,
         separation: float = 2,
         cohere: float = 0.025,
         separate: float = 0.25,
         match: float = 0.04,
-        
+
     ) -> None:
         """
         Create a new Flockers model.
@@ -53,11 +55,18 @@ class BoidFlockers(Model):
         self.fig = None
         self.ax = None
         self.text = None
+        self.status_num = {}
+        self.status_num["susceptible"] = []
+        self.status_num["infected"] = []
+        self.status_num["recovered"] = []
+        self.status_num["removed"] = []
 
         self.population = population
         self.vision = vision
         self.speed = speed
         self.separation = separation
+        self.motality = motality
+        self.infection_rate = infection_rate
         self.schedule = RandomActivation(self)
         self.space = ContinuousSpace(width, height, True)
         self.factors = dict(cohere=cohere, separate=separate, match=match)
@@ -83,6 +92,8 @@ class BoidFlockers(Model):
                 self.separation,
                 "susceptible",
                 0,
+                self.motality,
+                self.infection_rate,
                 **self.factors,
             )
             self.space.place_agent(boid, pos)
@@ -103,14 +114,17 @@ class BoidFlockers(Model):
                 self.separation,
                 "infected",
                 0,
+                self.motality,
+                self.infection_rate,
                 **self.factors,
             )
             self.space.place_agent(boid, pos)
             self.schedule.add(boid)
-            print("test")
+        self.get_status_num()
 
     def step(self) -> None:
         self.schedule.step()
+        self.get_status_num()
 
     def draw_initial(self) -> None:
         self.fig, self.ax = plt.subplots()
@@ -151,14 +165,37 @@ class BoidFlockers(Model):
     def draw_succesive(self) -> None:
         self.text.set_text(f"t={self.schedule.time:03d}")
         for agent in self.schedule.agents:
-            if(agent.status == "susceptible"):
-                agent_color = "green"
-            if(agent.status == "infected"):
-                agent_color = "red"
-            if(agent.status == "recovered"):
-                agent_color = "blue"
-            if(agent.status == "removed"):
-                agent_color = "black"
             self.agent_pos_lst[agent.unique_id].set_offsets(agent.pos)
             self.agent_vision_lst[agent.unique_id].center = agent.pos
-            self.agent_pos_lst[agent.unique_id].set_color = agent_color
+        for agent in self.schedule.agents:
+            if(agent.status == "susceptible"):
+                new_agent_color = "green"
+            if(agent.status == "infected"):
+                new_agent_color = "red"
+            if(agent.status == "recovered"):
+                new_agent_color = "blue"
+            if(agent.status == "removed"):
+                new_agent_color = "black"
+            self.agent_pos_lst[agent.unique_id].set_offsets(agent.pos)
+            self.agent_pos_lst[agent.unique_id].set_facecolors(new_agent_color)
+            self.agent_pos_lst[agent.unique_id].set_edgecolors(new_agent_color)
+            self.agent_vision_lst[agent.unique_id].center = agent.pos
+
+    def get_status_num(self):
+        susceptible_num = 0
+        infected_num = 0
+        recovered_num = 0
+        removed_num = 0
+        for agent in self.schedule.agents:
+            if(agent.status == "susceptible"):
+                susceptible_num += 1
+            if(agent.status == "infected"):
+                infected_num += 1
+            if(agent.status == "recovered"):
+                recovered_num += 1
+            if(agent.status == "removed"):
+                removed_num += 1
+        self.status_num["susceptible"].append(susceptible_num)
+        self.status_num["infected"].append(infected_num)
+        self.status_num["recovered"].append(recovered_num)
+        self.status_num["removed"].append(removed_num)

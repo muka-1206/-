@@ -167,6 +167,19 @@ class ModelRunner:
         self.interval = pmovie["interval"]
         self.run(lambda fanm: fanm.save(filename, writer, dpi=pmovie["dpi"]))
 
+    def make_stackplot(self, filename: str):
+        x = range(self.max_timestep + 1)
+        labels = ["removed", "recovered", "infected", "susceptible"]
+        colors = ["black", "blue", "red", "green"]
+        fig, ax = plt.subplots()
+        y1 = self.model.status_num["removed"]
+        y2 = self.model.status_num["recovered"]
+        y3 = self.model.status_num["infected"]
+        y4 = self.model.status_num["susceptible"]
+        ax.stackplot(x, y1, y2, y3, y4, labels=labels, colors=colors)
+        ax.legend(loc='upper left')
+        fig.savefig(filename)
+
 
 if __name__ == "__main__":
     from model import BoidFlockers
